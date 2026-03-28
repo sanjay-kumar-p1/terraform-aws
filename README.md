@@ -1,2 +1,2 @@
-# terraform-was
+# terraform-aws
 AWS Projects Terraform
