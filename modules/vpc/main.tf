@@ -7,13 +7,23 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_subnet" "public" {
+  for_each = {
+    for idx, subnet in var.public_subnets :
+    idx => subnet
+  }
+
   vpc_id            = aws_vpc.main.id
-  cidr_block        = var.public_subnet_cidr
-  availability_zone = var.az
+  cidr_block        = each.value.cidr
+  availability_zone = each.value.az
+
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "public-subnet"
+    Name = "public-subnet-${each.key}"
+
+    # REQUIRED FOR EKS
+    "kubernetes.io/cluster/my-eks-cluster" = "shared"
+    "kubernetes.io/role/elb"              = "1"
   }
 }
 
@@ -32,6 +42,8 @@ resource "aws_route" "internet_access" {
 }
 
 resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = aws_subnet.public.id
+  for_each = aws_subnet.public
+
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.public_rt.id
 }
